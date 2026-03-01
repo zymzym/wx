@@ -1,0 +1,39 @@
+[Unit]
+Description=GFS GRIB2 → 15-minute CSV Conversion Guardian
+Documentation=file:///root/my_product/wx/README.md
+After=network-online.target gfs-guardian.service
+# 建议在 gfs_guardian（数据下载守护）启动后再启动转换守护
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/my_product/wx
+
+# 以 Python 模块方式运行，WorkingDirectory 加入 Python 模块搜索路径
+ExecStart=/root/my_product/wx/.venv/bin/python -m gfs_15min_guardian
+
+# 任何异常退出均自动重启（SIGTERM 主动停止除外）
+Restart=on-failure
+RestartSec=30s
+
+# stdout/stderr 进入 systemd journal（journalctl -u gfs-15min-guardian -f 查看）
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gfs-15min-guardian
+
+# 资源限制
+LimitNOFILE=65536
+TimeoutStopSec=120s   # 等待正在运行的转换任务完成
+
+# 可选：自定义配置（取消注释并按需修改）
+# Environment=GFS15M_SCAN_INTERVAL=300
+# Environment=GFS15M_WORKERS=2
+# Environment=GFS15M_NO_WATCH=0
+# Environment=GFS15M_LOG_DIR=/root/my_product/wx/logs
+# Environment=GFS15M_STATE_FILE=/root/my_product/wx/logs/gfs_15min_state.json
+# Environment=GFS15M_MAPPING=jiangsu:data_js:data_js_csv,sichuan:data_sc:data_sc_csv,ningxia:data_nx:data_nx_csv
+
+[Install]
+WantedBy=multi-user.target
