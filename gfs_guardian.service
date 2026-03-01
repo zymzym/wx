@@ -1,0 +1,33 @@
+[Unit]
+Description=GFS Data Integrity Guardian
+Documentation=file:///opt/wx/GFS_FETCH_API.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/my_product/wx
+
+# 启动命令：以 Python 模块方式运行（路径由 WorkingDirectory 决定）
+ExecStart=/usr/bin/python3 -m gfs_guardian
+
+# 进程退出后自动重启（除非是主动 stop）
+Restart=on-failure
+RestartSec=30s
+
+# stdout / stderr 均进入 journal（journalctl -u gfs-guardian -f 查看）
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gfs-guardian
+
+# 资源限制
+LimitNOFILE=65536
+TimeoutStopSec=60s
+
+# 环境变量（如需代理）
+# Environment=HTTPS_PROXY=http://proxy:3128
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+# Data directories (large/generated data, not tracked)
+data_js/
+data_js_csv/
+data_nx/
+data_sc/
+data_*/
+gfs_15min_out/
+
+# Logs
+logs/
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Claude Code local config
+.claude/
+
+# OS
+.DS_Store
