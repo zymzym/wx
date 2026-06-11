@@ -1,0 +1,11 @@
+.git
+.agents
+.codex
+.pytest_cache
+__pycache__
+*.pyc
+
+data
+data_*
+logs
+gfs_15min_out

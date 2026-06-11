@@ -1,6 +1,9 @@
 services:
   gfs-weather-fetch:
-    image: python:3.11
+    build:
+      context: .
+      dockerfile: Dockerfile.gfs
+    image: gfs-weather-fetch:local
     container_name: gfs-weather-fetch
     working_dir: /workspace/wx
 
@@ -12,16 +15,6 @@ services:
       - /home/ynb/priceForecast/zym/wx/data:/workspace/wx/data
       - /home/ynb/priceForecast/zym/wx/logs:/workspace/wx/logs
 
-      # Required for bbox cropping of AWS S3 historical data
-      - /usr/local/bin/wgrib2:/usr/local/bin/wgrib2:ro
-
-    command:
-      - bash
-      - -lc
-      - |
-        pip install --no-cache-dir requests &&
-        exec python -m gfs_guardian
-
     restart: unless-stopped
 
     cpus: "4.0"
@@ -30,6 +23,4 @@ services:
 
     environment:
       PYTHONUNBUFFERED: "1"
-      PIP_INDEX_URL: https://pypi.org/simple
-      PIP_DISABLE_PIP_VERSION_CHECK: "1"
-      WGRIB2: /usr/local/bin/wgrib2
+      WGRIB2: /opt/wgrib2/bin/wgrib2

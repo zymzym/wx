@@ -1,0 +1,31 @@
+FROM python:3.11
+
+ARG MICROMAMBA_URL=https://micro.mamba.pm/api/micromamba/linux-64/latest
+
+ENV MAMBA_ROOT_PREFIX=/opt/micromamba
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+        bzip2 \
+        ca-certificates \
+        curl \
+    && curl --fail --location --retry 5 \
+        "${MICROMAMBA_URL}" \
+        --output /tmp/micromamba.tar.bz2 \
+    && tar -xjf /tmp/micromamba.tar.bz2 \
+        -C /usr/local/bin \
+        --strip-components=1 \
+        bin/micromamba \
+    && micromamba create --yes --prefix /opt/wgrib2 --channel conda-forge wgrib2 \
+    && micromamba clean --all --yes \
+    && /opt/wgrib2/bin/wgrib2 -version \
+    && pip install --no-cache-dir requests \
+    && rm -rf /var/lib/apt/lists/* /tmp/micromamba.tar.bz2
+
+ENV PYTHONUNBUFFERED=1 \
+    WGRIB2=/opt/wgrib2/bin/wgrib2 \
+    PATH=/opt/wgrib2/bin:${PATH}
+
+WORKDIR /workspace/wx
+
+CMD ["python", "-m", "gfs_guardian"]
