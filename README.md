@@ -18,9 +18,7 @@ wx/
 ├── gfs_guardian.service            # systemd：下载守护进程服务文件
 ├── gfs_to_15min_guardian.service   # systemd：转换守护进程服务文件
 ├── tests/                          # 单元测试 & smoke 测试
-├── data_js/                        # 江苏区域 GRIB2 数据（自动生成，不入库）
-├── data_sc/                        # 四川区域 GRIB2 数据（自动生成，不入库）
-├── data_nx/                        # 宁夏区域 GRIB2 数据（自动生成，不入库）
+├── data/                           # 中国区域 GRIB2 数据（自动生成，不入库）
 ├── data_js_csv/                    # 江苏 15 分钟 CSV 输出（自动生成，不入库）
 ├── data_sc_csv/                    # 四川 15 分钟 CSV 输出（自动生成，不入库）
 ├── data_nx_csv/                    # 宁夏 15 分钟 CSV 输出（自动生成，不入库）
@@ -36,7 +34,7 @@ wx/
 pip install eccodes numpy pandas
 # 可选：低延迟文件系统监听（gfs_15min_guardian 用，不装则自动降级为轮询）
 pip install watchdog
-# 可选：安装 wgrib2 以在 S3 下载时裁剪 bbox（否则保存全球 GRIB）
+# 必需：安装 wgrib2，以便 S3 历史数据按 bbox 裁剪
 ```
 
 ---
@@ -45,7 +43,7 @@ pip install watchdog
 
 ### 1. 守护进程（推荐生产使用）
 
-守护进程 `gfs_guardian` 会自动对配置的多个区域（江苏、四川、宁夏）进行历史和实时数据的巡检与补全下载。
+守护进程 `gfs_guardian` 会自动对中国区域进行历史和实时数据的巡检与补全下载。
 
 #### 方式 A：直接运行
 
@@ -118,7 +116,7 @@ python hist_fetch/hist_fetch.py \
     --workers 4
 ```
 
-> 超出 ~10 天的日期请使用 `hist_fetch.py`，它会在 NOMADS 不可用时自动回落至 S3。
+> 超出 ~10 天的日期请使用 `hist_fetch.py`，它会在 NOMADS 不可用时自动回落至 S3。S3 回落要求系统可找到 `wgrib2`，也可通过 `WGRIB2` 环境变量指定可执行文件路径。
 
 ---
 
@@ -242,11 +240,9 @@ rm data_js_csv/gfs_15min_2026-02-26.csv
 
 当前守护进程覆盖以下区域（见 `gfs_guardian/config.py`）：
 
-| 区域 | bbox（W,S,E,N）       | 输出目录  | 历史起始     |
-|------|-----------------------|-----------|--------------|
-| 江苏 | 115.5,30.5,122.5,35.5 | data_js/  | 2025-09-01   |
-| 四川 | 96.5,25.5,109.5,35.0  | data_sc/  | 2025-09-01   |
-| 宁夏 | 103.5,35.0,108.5,40.0 | data_nx/  | 2025-09-01   |
+| 区域 | bbox（W,S,E,N） | 输出目录 | 历史起始 |
+|------|-----------------|----------|----------|
+| 中国 | 73,18,135,54    | data/ | 2025-09-01 |
 
 ---
 

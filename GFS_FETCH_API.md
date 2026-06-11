@@ -83,7 +83,7 @@ python hist_fetch/hist_fetch.py \
 ### 注意事项
 
 - 每个日期先尝试 NOMADS；收到 403/404 自动切换 S3 byte-range 下载
-- S3 下载时若系统路径中有 `wgrib2` / `wgrib2.exe`，自动裁剪至 bbox；否则保存全球 GRIB
+- S3 下载强制使用 `wgrib2` / `wgrib2.exe` 裁剪至 bbox；找不到工具时任务失败，不会保存全球 GRIB。可通过 `WGRIB2` 环境变量指定可执行文件路径
 - `--workers` 建议 ≤ 4，过大会触发 S3 限流
 - `--fh 0:0` 可只取分析场（注意 `tp`/`dswrf`/`dlwrf` 等累积量在 f000 为空）
 
@@ -254,7 +254,7 @@ for f in manifest["files"]:
 | 限制 | 说明 |
 |------|------|
 | NOMADS 窗口 | 近 ~10 天，超出请用 `hist_fetch.py` |
-| S3 wgrib2 裁剪 | 无 `wgrib2` 时保存全球 GRIB（文件更大） |
+| S3 wgrib2 裁剪 | S3 回落强制要求 `wgrib2`；缺失时任务失败，不保存全球 GRIB |
 | 累积场 f000 | `tp` / `dswrf` / `dlwrf` 在 f000 无数据 |
 | NOMADS level bleed | NOMADS 下载文件会含 15 个额外 GRIB 消息（同层其他变量），不影响契约字段完整性 |
 | 变量不可自定义 | `--vars` 参数不存在，变量集由 `var_contract.py` 统一管理 |

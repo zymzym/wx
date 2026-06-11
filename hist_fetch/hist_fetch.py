@@ -7,9 +7,8 @@ Data sources (automatic, in order):
   2. AWS S3 noaa-gfs-bdp-pds    — full historical archive (fallback on 403/404)
 
 All output (directory layout, file names, GRIB validation, manifest) is
-identical to gfs_fetch.py.  If wgrib2 is found in PATH the S3 files are
-bbox-cropped to match NOMADS output exactly; without wgrib2 the full
-global GRIB2 messages are saved instead.
+identical to gfs_fetch.py. S3 files are always bbox-cropped with wgrib2
+to match NOMADS output; S3 fallback fails if wgrib2 is unavailable.
 
 Variables are fixed by the authoritative contract in gfs_repo/var_contract.py.
 
@@ -32,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import io
 import json
+import os
 import shutil
 import subprocess
 import threading
@@ -54,6 +54,11 @@ _LOCK      = threading.Lock()   # stdout lock for parallel mode
 # wgrib2 detection (once at import time)
 # ---------------------------------------------------------------------------
 def _find_wgrib2() -> Optional[str]:
+    configured = os.getenv("WGRIB2")
+    if configured:
+        configured_path = Path(configured).expanduser()
+        if configured_path.is_file():
+            return str(configured_path)
     for name in ("wgrib2", "wgrib2.exe"):
         p = shutil.which(name)
         if p:
@@ -63,6 +68,16 @@ def _find_wgrib2() -> Optional[str]:
 WGRIB2: Optional[str] = _find_wgrib2()
 # True when wgrib2 is a Windows .exe invoked from WSL — paths need wslpath -w
 _WGRIB2_IS_WIN_EXE: bool = bool(WGRIB2 and WGRIB2.endswith(".exe"))
+
+
+def _require_wgrib2() -> str:
+    """Return the crop executable or fail before saving uncropped S3 data."""
+    if WGRIB2:
+        return WGRIB2
+    raise RuntimeError(
+        "S3 fallback requires wgrib2 for bbox cropping, but it was not found. "
+        "Install wgrib2 or set WGRIB2 to its executable path."
+    )
 
 
 def _wpath(p: Path) -> str:
@@ -188,7 +203,8 @@ def _var_ranges(idx: list[tuple[int, str]],
 def _s3_download(fname: str, date_str: str, cycle: str, vars_: list[str],
                  bbox: dict, dest: Path, retries: int, timeout: int,
                  emit) -> int:
-    """Download from S3 using byte-range selection.  Returns file size."""
+    """Download selected variables from S3 and crop them to bbox."""
+    wgrib2 = _require_wgrib2()
     file_url = _s3_url(date_str, cycle, fname)
 
     for attempt in range(1, retries + 1):
@@ -218,23 +234,19 @@ def _s3_download(fname: str, date_str: str, cycle: str, vars_: list[str],
                 if fh.read(4) != b"GRIB":
                     raise RuntimeError("S3 data is not a valid GRIB2 file")
 
-            # Optional: bbox crop with wgrib2
-            if WGRIB2:
-                lon_r = f"{bbox['west']}:{bbox['east']}"
-                lat_r = f"{bbox['south']}:{bbox['north']}"
-                proc = subprocess.run(
-                    [WGRIB2, _wpath(tmp), "-small_grib",
-                     lon_r, lat_r, _wpath(dest)],
-                    capture_output=True,
+            lon_r = f"{bbox['west']}:{bbox['east']}"
+            lat_r = f"{bbox['south']}:{bbox['north']}"
+            proc = subprocess.run(
+                [wgrib2, _wpath(tmp), "-small_grib",
+                 lon_r, lat_r, _wpath(dest)],
+                capture_output=True,
+            )
+            tmp.unlink(missing_ok=True)
+            if proc.returncode != 0:
+                err = (proc.stderr or proc.stdout or b"").decode(errors="replace")
+                raise RuntimeError(
+                    f"wgrib2 exited {proc.returncode}: {err.strip()}"
                 )
-                tmp.unlink(missing_ok=True)
-                if proc.returncode != 0:
-                    err = (proc.stderr or proc.stdout or b"").decode(errors="replace")
-                    raise RuntimeError(
-                        f"wgrib2 exited {proc.returncode}: {err.strip()}"
-                    )
-            else:
-                tmp.rename(dest)
 
             return dest.stat().st_size
 
@@ -306,7 +318,7 @@ def fetch_one(date_: str, cycle: str, bbox: dict, out: Path,
     emit(f"fh        : {fh_start}–{fh_end}")
     emit(f"vars      : {', '.join(DEFAULT_VARS)}")
     if not WGRIB2:
-        emit(f"  [warn] wgrib2 not found — S3 fallback files will NOT be bbox-cropped")
+        emit(f"  [warn] wgrib2 not found — S3 fallback will fail instead of saving uncropped data")
     emit("")
 
     files_meta: list[dict] = []

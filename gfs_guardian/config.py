@@ -23,9 +23,7 @@ class Region:
 
 
 REGIONS: list[Region] = [
-    Region("jiangsu", "115.5,30.5,122.5,35.5", "data_js", "2025-09-01"),
-    Region("sichuan", "96.5,25.5,109.5,35.0",  "data_sc", "2025-09-01"),
-    Region("ningxia", "103.5,35.0,108.5,40.0",  "data_nx", "2025-09-01"),
+    Region("china", "73,18,135,54", "data", "2025-09-01"),
 ]
 
 
