@@ -4,6 +4,7 @@
 所有参数均有默认值，可通过环境变量或 CLI 参数覆盖（CLI 优先级最高）。
 
 环境变量一览：
+  GFS15M_ENABLED         设为 1 时启用自动 CSV 转换，默认 0（停用）
   GFS15M_SCAN_INTERVAL   定时扫描间隔（秒），默认 300
   GFS15M_WORKERS         并行转换 worker 数，默认 2
   GFS15M_NO_WATCH        设为 1 时禁用 watchdog，默认 0（启用）
@@ -71,6 +72,9 @@ MAPPINGS: list[SourceMapping] = _default_mappings()
 # ---------------------------------------------------------------------------
 # 调度参数（可被 env var 覆盖，再被 CLI 覆盖）
 # ---------------------------------------------------------------------------
+
+# 自动 CSV 转换当前默认停用，需要时显式开启
+ENABLED: bool = os.getenv("GFS15M_ENABLED", "0") == "1"
 
 # 定时全量扫描间隔（秒）
 SCAN_INTERVAL_SEC: int = int(os.getenv("GFS15M_SCAN_INTERVAL", "300"))

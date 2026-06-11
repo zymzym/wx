@@ -11,6 +11,9 @@ User=root
 Group=root
 WorkingDirectory=/root/my_product/wx
 
+# 主流程暂不执行气象数据 CSV 转换；恢复时改为 1
+Environment=GFS15M_ENABLED=0
+
 # 以 Python 模块方式运行，WorkingDirectory 加入 Python 模块搜索路径
 ExecStart=/root/my_product/wx/.venv/bin/python -m gfs_15min_guardian
 
@@ -28,6 +31,7 @@ LimitNOFILE=65536
 TimeoutStopSec=120s   # 等待正在运行的转换任务完成
 
 # 可选：自定义配置（取消注释并按需修改）
+# Environment=GFS15M_ENABLED=1
 # Environment=GFS15M_SCAN_INTERVAL=300
 # Environment=GFS15M_WORKERS=2
 # Environment=GFS15M_NO_WATCH=0
