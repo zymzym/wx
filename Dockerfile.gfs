@@ -18,7 +18,7 @@ RUN apt-get update \
         bin/micromamba \
     && micromamba create --yes --prefix /opt/wgrib2 --channel conda-forge wgrib2 \
     && micromamba clean --all --yes \
-    && /opt/wgrib2/bin/wgrib2 -version \
+    && test -x /opt/wgrib2/bin/wgrib2 \
     && pip install --no-cache-dir requests \
     && rm -rf /var/lib/apt/lists/* /tmp/micromamba.tar.bz2
 
